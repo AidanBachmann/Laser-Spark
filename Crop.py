@@ -1,7 +1,5 @@
 # Description: 
-# Code for cropping interferometry data for DPP 2024 poster. This code
-# will also include a filter that flags bad data (i.e., black images) by
-# intensity threshold.
+# Code for cropping interferometry data for DPP 2024 poster. Cropping is hard coded for simplicity.
 
 # ---------- Imports ----------
 
@@ -32,7 +30,7 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     time = (info[:,0].astype(float))*1e6 # Get shot time in ns
     time = abs(time - time[0]) # Set initial time to zero
     Ni,Nf = info[:,1].astype(int),info[:,2].astype(int) # Initial and final shot number for each time setting
-    print(f'{time}\n{Ni}\n{Nf}')
+    #print(f'Time: {time}\nInitial Shot Numer: {Ni}\nFinal Shot Number: {Nf}') # Print shot info
     numSets = len(time) # Number of datasets taken
     return time,Ni,Nf,numSets
 
@@ -47,8 +45,11 @@ def cropSet(Ni,Nf): # Crop set of images for one time setting
     for i in np.linspace(0,numShots-1,numShots,dtype='int'): # Loop through, crop each image
         cropSingle(str(Ni + i).zfill(5)) # zfill pads the shot number with leading zeros
 
-#shot = '00247'
-#cropSingle(shot)
+def cropAll(): # Crop all data described in Shot Info text file
+    _,Ni,Nf,numSets = getShotInfo() # Get shot info
+    for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, crop images
+        cropSet(Ni[i],Nf[i])
 
-#getShotInfo()
-cropSet(int(21),int(29))
+# ---------- Main ----------
+
+cropAll() # Crop all images
