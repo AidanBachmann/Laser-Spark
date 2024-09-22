@@ -1,4 +1,4 @@
-Time (ms), Initial Shot, Final Shot
+Time (ms),Initial Shot,Final Shot
 1.299892,00021,00029
 1.299887,00031,00040
 1.299882,00041,00050

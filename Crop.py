@@ -27,17 +27,22 @@ LY = 2871
 # ---------- Functions ----------
 
 def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text file
-    info = pd.read_csv(info_path,delimiter=',',engine='python').to_numpy()
-    time = abs((info[:,0] - info[0,0])*(1e3)) # Get shot time in ns
-    Ni,Nf = info[:,1].astype(int),info[:,2].astype(int) # Initial and final shot number for each time setting
-    print(time,'\n',Ni,'\n',Nf)
-    return time,Ni,Nf
+    info = pd.read_csv(info_path,delimiter=',',engine='python',converters={'Time (ms)': str,'Initial Shot': str,'Final Shot': str}).to_numpy()
+    time = (info[:,0].astype(float))*1e6 # Get shot time in ns
+    time = abs(time - time[0]) # Set initial time to zero
+    Ni,Nf = info[:,1],info[:,2] # Initial and final shot number for each time setting
+    print(f'{time}\n{Ni}\n{Nf}')
+    numSets = len(time) # Number of datasets taken
+    return time,Ni,Nf,numSets
 
 def cropSingle(shotNum,LX=LX,LY=LY,UX=UX,UY=UY,source_path=source,targ_path=target): # Crop single image, save in target directory
     arr = np.asarray(Image.open(f'{source_path}/{shotNum}_interferometer.jpg').convert('L')) # Open image in greyscale, store in array
     croppedArr = arr[UY:LY+1,UX:LX+1] # Crop Image
     plt.imshow(croppedArr)
     plt.savefig(f'{targ_path}/{shotNum}_interferometer.jpg')
+
+def cropSet(Ni,Nf): # Crop set of images for one time setting
+    return 0
 
 
 #shot = '00247'
