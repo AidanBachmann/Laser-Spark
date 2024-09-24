@@ -11,7 +11,7 @@ from scipy import stats
 from PIL import Image
 import tracemalloc
 from pathlib import Path
-import cv2
+#import cv2
 from scipy.ndimage import convolve
 from scipy.integrate import trapz, quad
 from scipy.ndimage.interpolation import rotate
@@ -876,20 +876,21 @@ def save(self, filepath):
 
 def preProcess(f_name=None,med_ksize=5):
     # Load an color image.
-    shot = np.load(filename=f_name)
-    # sigma_est = estimate_sigma(shot, multichannel=True, average_sigmas=True)
+    shot = np.load(f_name) # Open data as NpzFile object
+    ## sigma_est = estimate_sigma(shot, multichannel=True, average_sigmas=True)
 
-    # Apply histogram equalization [CLAHE]
-    # shot = enhance(shot, clip_limit=3)
-    # image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
+    ## Apply histogram equalization [CLAHE]
+    ## shot = enhance(shot, clip_limit=3)
+    ## image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
 
-    # Adjust Contrast
-    image_yuv = cv2.cvtColor(shot, cv2.COLOR_BGR2YUV)
-    image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
+    ## Adjust Contrast
+    #image_yuv = cv2.cvtColor(shot, cv2.COLOR_BGR2YUV)
+    #image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
 
-    # Convert to RGB
-    shot_nl = cv2.cvtColor(image_yuv, cv2.COLOR_YUV2RGB)
-
+    ## Convert to RGB
+    #shot_nl = cv2.cvtColor(image_yuv, cv2.COLOR_YUV2RGB)
+    shot_nl = shot['arr_0'] # Retrieve data as a numpy array
+    shot.close() # Close NpzFile object
     # Split Channels
     (b, g, r) = (shot_nl[:, :, 0], shot_nl[:, :, 1], shot_nl[:, :, 2])
     # g = cv2.medianBlur(g, med_ksize)

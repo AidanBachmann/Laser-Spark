@@ -37,10 +37,16 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     numSets = len(time) # Number of datasets taken
     return time,Ni,Nf,numSets
 
+def checkIntensity(g,threshold=50): # Check if image is black or if it has a signal. 'g' is green channel from image.
+    if np.sum(g)/(g.shape[0]*g.shape[1]) > threshold: # Check if green intensity exceeds threshold
+        return 1
+    else:
+        return 0
+
 def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (1330, 850),
          fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
-    f_name = f'{str(shotNumber).zfilL(5)}_interferometer' # Get filename of shot
-    f_name_ps = f'{str(shotNumber_bg).zfilL(5)}_interferometer' # Get filename of preshot (ambient phase)
+    f_name = f'{str(shotNumber).zfill(5)}_interferometer' # Get filename of shot
+    f_name_ps = f'{str(shotNumber_bg).zfill(5)}_interferometer' # Get filename of preshot (ambient phase)
 
     # Initially Perform Wavelet Analysis to clean #
     # Preshot #
@@ -50,6 +56,11 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     # Shot #
     # Split Channels #
     (b, g, r) = ut.preProcess(f_name=f'{source}/{f_name}.npz', med_ksize=19)
+    if checkIntensity(g): # Check if image is blank
+        pass
+    else:
+        print(f'Image {f_name} has no signal, skipping to next image...')
+        return -1,-1
 
     # Resize Images #
     # ut.plot_one_thing(g, "original", colorbar=True, plot_3d=False, to_show=False)
@@ -185,6 +196,6 @@ def unwrapAll(): # Unwrap all data described in Shot Info text file
 
 if __name__ == '__main__':
     # # coords in (row, column).
-      e_s, e_ps = unwrapSingle(shotNumer=165,shotNumber_bg=15,size=(936, 1732),
+      e_s, e_ps = unwrapSingle(shotNumber=165,shotNumber_bg=15,size=(936, 1732),
                     coords=(int(1935), int(2793)),fftycoords=(int(790),int(840)),fftxcoords=(int(300), int(625)),
                     not_horizontal=True,typ='box',angle=0.0,downsamplef=1)
