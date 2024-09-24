@@ -11,7 +11,7 @@ from scipy import stats
 from PIL import Image
 import tracemalloc
 from pathlib import Path
-#import cv2
+import cv2
 from scipy.ndimage import convolve
 from scipy.integrate import trapz, quad
 from scipy.ndimage.interpolation import rotate
@@ -124,11 +124,11 @@ def pad_with(vector, pad_width, iaxis, kwargs):
 
 def compute_fft_image(mat):
     # displaying the memory
-    print("compute_fft_image: "+str(tracemalloc.get_traced_memory()))
+    #print("compute_fft_image: "+str(tracemalloc.get_traced_memory()))
     fshift = np.fft.fftshift(np.fft.fft2(mat))
     # fshift  =np.fft.fft2(mat)
     # plot_one_thing(mat, "padded")
-    plot_one_thing(np.log10(np.abs(fshift)), "fft", vmax=(0, 8))
+    #plot_one_thing(np.log10(np.abs(fshift)), "fft", vmax=(0, 8))
     return fshift
 
 
@@ -281,10 +281,10 @@ def modifiedCGSolver(mat, eps, W, to_plot=False):
 
     norm = np.linalg.norm(rho_l)
 
-    print("Beginning iterations: ")
+    #print("Beginning iterations: ")
     phi, iter, error = iterateCG(rho_l, W2, norm, eps)
-    print("iter = ", iter, ", Final Error: ", error[error.size-1])
-    if to_plot:
+    #print("iter = ", iter, ", Final Error: ", error[error.size-1])
+    '''if to_plot:
         fig = plt.figure(figsize=(12, 14))
         ax0 = fig.add_subplot(1, 1, 1)
         ax0.plot(np.log10(error), 'k', linewidth=4)
@@ -292,9 +292,9 @@ def modifiedCGSolver(mat, eps, W, to_plot=False):
                title='Masked Conjugate-Gradient Convergence')
         plt.tight_layout()
         plt.show()
-        plt.close(fig)
+        plt.close(fig)'''
 
-    print("End Iterations!")
+    #print("End Iterations!")
     return phi, iter, error[error.size-1], np.multiply(W, mat)
 
 
@@ -375,7 +375,7 @@ def pad_and_fft(lst):
     ret_lst = []
     for l in lst:
         # displaying the memory
-        print("pad_and_fft: " + str(tracemalloc.get_traced_memory()))
+        #print("pad_and_fft: " + str(tracemalloc.get_traced_memory()))
         ret_lst.append(compute_fft_image(mat=l))
         # ret_lst.append(compute_fft_image(mat=pad_image_po2(l)))
     return ret_lst, orig_size
@@ -489,7 +489,7 @@ def apply_mask_ifft(lst, mask):
     for l in lst:
         # F_m = l*mask
         # displaying the memory
-        print("apply_mask_ifft: " + str(tracemalloc.get_traced_memory()))
+        #print("apply_mask_ifft: " + str(tracemalloc.get_traced_memory()))
         # ps = sp.fftpack.ifftshift(sp.fftpack.ifft2(l*mask, overwrite_x=False))
         ps = np.fft.ifftshift(l*mask)
 
@@ -876,21 +876,21 @@ def save(self, filepath):
 
 def preProcess(f_name=None,med_ksize=5):
     # Load an color image.
-    shot = np.load(f_name) # Open data as NpzFile object
-    ## sigma_est = estimate_sigma(shot, multichannel=True, average_sigmas=True)
+    _shot_ = np.load(f_name) # Open data as NpzFile object
+    shot = _shot_['arr_0'] # Retrieve data as a numpy array
+    _shot_.close() # Close NpzFile object (prevents memory leak)
+    # sigma_est = estimate_sigma(shot, multichannel=True, average_sigmas=True)
 
-    ## Apply histogram equalization [CLAHE]
-    ## shot = enhance(shot, clip_limit=3)
-    ## image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
+    # Apply histogram equalization [CLAHE]
+    # shot = enhance(shot, clip_limit=3)
+    # image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
 
-    ## Adjust Contrast
-    #image_yuv = cv2.cvtColor(shot, cv2.COLOR_BGR2YUV)
-    #image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
+    # Adjust Contrast
+    image_yuv = cv2.cvtColor(shot, cv2.COLOR_BGR2YUV)
+    image_yuv[:, :, 0] = cv2.equalizeHist(image_yuv[:, :, 0])
 
-    ## Convert to RGB
-    #shot_nl = cv2.cvtColor(image_yuv, cv2.COLOR_YUV2RGB)
-    shot_nl = shot['arr_0'] # Retrieve data as a numpy array
-    shot.close() # Close NpzFile object
+    # Convert to RGB
+    shot_nl = cv2.cvtColor(image_yuv, cv2.COLOR_YUV2RGB)
     # Split Channels
     (b, g, r) = (shot_nl[:, :, 0], shot_nl[:, :, 1], shot_nl[:, :, 2])
     # g = cv2.medianBlur(g, med_ksize)
@@ -969,8 +969,9 @@ def find_zero_pad(line, ymin=100, air=False, to_show=False):
         newline[zind:] = 0
 
     if to_show:
-        plot_one_line(y=line, f_name="original", to_show=False)
-        plot_one_line(y=newline, f_name='new line', to_show=True)
+        #plot_one_line(y=line, f_name="original", to_show=False)
+        #plot_one_line(y=newline, f_name='new line', to_show=True)
+        pass
 
     return newline
 
@@ -999,7 +1000,7 @@ def generate_fft_mask(fftxcoords, fftycoords, F_ps, F_s, typ='box'):
             kGs = sample_kernel(Gsf, s)
             mask = convolve(mask, kGs/np.sum(kGs))
 
-            plot_one_thing(mask, "mask", colorbar=True)
+            #plot_one_thing(mask, "mask", colorbar=True)
     elif typ == 'gaussian':
             mask = gen_mask(F_ps.shape[0], F_ps.shape[1], fftxcoords, fftycoords, typ='gaussian', kxsize=50, kysize=20)
 

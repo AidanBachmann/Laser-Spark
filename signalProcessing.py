@@ -11,6 +11,7 @@ import tracemalloc
 from tempfile import TemporaryFile
 import pandas as pd
 import matplotlib.pyplot as plt
+import time as TIME
 outfile = TemporaryFile()
 
 # ---------- Plotting Options ----------
@@ -119,10 +120,9 @@ def unwrap_bg(shotNumber_bg=15,typ='box',size=600,coords = (1330, 850), # Unwrap
     # stopping the library
     tracemalloc.stop()
     return err_ps
-    
 
-def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (1330, 850),
-         fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
+def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',fftycoords=(int(790),int(840)),fftxcoords=(int(300), int(625)),
+                 not_horizontal=True,angle=0.0,downsamplef=1,source=source,target=target):
     f_name = f'{str(shotNumber).zfill(5)}_interferometer' # Get filename of shot
     f_name_ps = f'{str(shotNumber_bg).zfill(5)}_interferometer' # Get filename of preshot (ambient phase)
 
@@ -180,12 +180,12 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     ## F_m_ps and F_m_s are the fourier domain images, but after the mask has been applied ##
     ((pss, F_m_ps), (ss, F_m_s)) = ut.apply_mask_ifft((F_ps, F_s), mask)
     (phase_ps, phase_s) = ut.resize_list_images(ut.compute_wrapped_phase((pss, ss)), orig_size)
-    ut.plot_one_thing(phase_s, "phase_s", colorbar=True)
+    #ut.plot_one_thing(phase_s, "phase_s", colorbar=True)
 
     # Unwrap Phase #
     ((ResS, RmaskS), (ResPS, RmaskPS)) = ut.gen_res_map((phase_s, phase_ps), int(10/f))
-    ut.plot_one_thing(RmaskS, "residualS", colorbar=True)
-    ut.plot_one_thing(RmaskPS, "residualPS", colorbar=True)
+    #ut.plot_one_thing(RmaskS, "residualS", colorbar=True)
+    #ut.plot_one_thing(RmaskPS, "residualPS", colorbar=True)
     ps, n_iters_s, err_s, maskedSigS = ut.modifiedCGSolver(phase_s, 1E-15, RmaskS, to_plot=True)
     pps, n_iters_ps, err_ps, maskedSigPS = ut.modifiedCGSolver(phase_ps, 1E-15, RmaskPS, to_plot=True)
 
@@ -198,16 +198,18 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     ps = ps + abs(ps.min())
 
     pdiffR = ut.rotate_im(p=pdiff, angle=angle)
-    ut.plot_one_thing(pdiffR, "pdiff", colorbar=True, plot_3d=False, to_show=False, vmax=(-20, 12))
+    #ut.plot_one_thing(pdiffR, "pdiff", colorbar=True, plot_3d=False, to_show=False, vmax=(-20, 12))
 
     np.savez(f'{target}/{f_name}_pdiff',pdiffR)
+    np.savez(f'{target}/{f_name}_pps',pps)
+    np.savez(f'{target}/{f_name}_ps',ps)
 
     # pdiffRLP = ut.gaussian_filter(pdiffR, sigma=6)
     # ut.plot_one_thing(pdiffRLP, "pdiffRLP", colorbar=True, plot_3d=False, vmax=(-20, 12))
 
     # Plot Everything #
     # ut.plot_one_thing(pdiff, "pdiff", colorbar=True, plot_3d=False)
-    ut.plot_the_things(g_ps, phase_ps, pps, F_m_ps, F_ps, g_s, phase_s, ps, F_s, F_m_s, pdiff, f_name=f_name)
+    #ut.plot_the_things(g_ps, phase_ps, pps, F_m_ps, F_ps, g_s, phase_s, ps, F_s, F_m_s, pdiff, f_name=f_name)
 
 
     # Plot Everything and save them#
@@ -217,18 +219,18 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     im = ax1.imshow(phase_s, cmap="RdBu", vmin=0, vmax=6.5)
     plt.colorbar(im)
     plt.tight_layout()
-    #plt.savefig("./Plots/8_4_2023_shot1_phase_s.png", dpi=600)
-    plt.show()
+    plt.savefig(f'{target}/{f_name}_phase_s.jpg', dpi=600)
+    #plt.show()
 
     fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
     fig1.set_size_inches(14, 14)
     im = ax1.imshow(pdiff, cmap="RdBu", vmin=-20, vmax=12)
     plt.colorbar(im)
     plt.tight_layout()
-    #plt.savefig("./Plots/8_4_2023_shot1_pdiff.png", dpi=600)
-    plt.show()
+    plt.savefig(f'{target}/{f_name}_pdiff.jpg', dpi=600)
+    #plt.show()
 
-    fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
+    '''fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
     fig1.set_size_inches(14,14)
     im = ax1.imshow(np.log10(np.abs(F_s)+1), cmap="RdBu")
     plt.colorbar(im)
@@ -241,7 +243,7 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     im = ax1.imshow(np.log10(np.abs(F_ps)+1), cmap="RdBu")
     plt.colorbar(im)
     #plt.savefig("./Plots/8_4_2023_shot1_F_ps.png", dpi=600)
-    plt.show()
+    plt.show()'''
 
     # ut.save_mat_to_im(pdiff, '8_4_2023_shot1_pdiff.tiff')
 
@@ -262,6 +264,8 @@ def unwrapAll(): # Unwrap all data described in Shot Info text file
 
 if __name__ == '__main__':
     # # coords in (row, column).
-      e_s, e_ps = unwrapSingle(shotNumber=165,shotNumber_bg=15,size=(936, 1732),
-                    coords=(int(1935), int(2793)),fftycoords=(int(790),int(840)),fftxcoords=(int(300), int(625)),
-                    not_horizontal=True,typ='box',angle=0.0,downsamplef=1)
+      start = TIME.time()
+      e_s, e_ps = unwrapSingle(shotNumber=165)
+      end = TIME.time()
+      print(f'Finished in {end - start} seconds.')
+    
