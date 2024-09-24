@@ -52,7 +52,3 @@ def cropAll(): # Crop all data described in Shot Info text file
     for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, crop images
         cropSet(Ni[i],Nf[i])
     print('DONE') 
-
-# ---------- Main ----------
-
-cropAll() # Crop all images
