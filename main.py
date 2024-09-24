@@ -1,7 +1,7 @@
 # ---------- Import User Files ----------
 
 import Crop as crop
-import signalProcessing as SP
+#import signalProcessing as SP
 
 # ---------- Flags ----------
 

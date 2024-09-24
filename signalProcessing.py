@@ -1,12 +1,19 @@
+# Description: 
+# Phase unwrapping code written by James Young, adapted to fit pre-existing code and file structure.
+
+# ---------- Imports ----------
+
 from __future__ import print_function
 import matplotlib as mpl
 import Utils as ut
 import numpy as np
 import tracemalloc
 from tempfile import TemporaryFile
+import pandas as pd
 import matplotlib.pyplot as plt
 outfile = TemporaryFile()
 
+# ---------- Plotting Options ----------
 # Use LaTeX for rendering
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['mathtext.rm'] = 'serif'
@@ -14,37 +21,47 @@ mpl.rcParams['font.size'] = 18
 mpl.rcParams['legend.fontsize'] = 'large'
 mpl.rcParams['figure.titlesize'] = 'medium'
 
-def main(fname='05255_t1_int', fname_ps=None, typ='box', size=600, coords = (1330, 850),
-         fftycoords = (400, 500), fftxcoords=(475), not_horizontal=False, angle=0, downsamplef=1):
-    f_name = fname
-    f_name_h = f_name + ".jpg"
-    if fname_ps is None:
-        f_name_ps = f_name+"_preshot"
-    else:
-        f_name_ps = fname_ps+"_preshot"
+# ---------- File Paths ----------
 
-    f_name_h_ps = f_name_ps + ".jpg"
+source = '../Cropped Data' # Directory containing cropped .npz files
+target = '../Unwrapped Data' # Target directory to deposit unwrapped images
+shot_info = target + '/Shot Info.txt' # Text file containing timing and assoicated shot numbers
+
+# ---------- Functions ----------
+
+def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text file
+    info = pd.read_csv(info_path,delimiter=',',engine='python').to_numpy() # Read Shot Info text file
+    time = (info[:,0].astype(float))*1e6 # Get shot time in ns
+    time = abs(time - time[0]) # Set initial time to zero
+    Ni,Nf = info[:,1].astype(int),info[:,2].astype(int) # Initial and final shot number for each time setting
+    numSets = len(time) # Number of datasets taken
+    return time,Ni,Nf,numSets
+
+def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600,coords = (1330, 850),
+         fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
+    f_name = f'{str(shotNumber).zfilL(5)}_interferometer' # Get filename of shot
+    f_name_ps = f'{str(shotNumber_bg).zfilL(5)}_interferometer' # Get filename of preshot (ambient phase)
 
     # Initially Perform Wavelet Analysis to clean #
     # Preshot #
     # Split Channels #
-    b_o, g_o, r_o = ut.preProcess(f_name=f_name_h_ps, med_ksize=19)
+    b_o, g_o, r_o = ut.preProcess(f_name=f'{source}/{f_name_ps}.npz', med_ksize=19)
 
     # Shot #
     # Split Channels #
-    (b, g, r) = ut.preProcess(f_name=f_name_h, med_ksize=19)
+    (b, g, r) = ut.preProcess(f_name=f'{source}/{f_name}.npz', med_ksize=19)
 
     # Resize Images #
     # ut.plot_one_thing(g, "original", colorbar=True, plot_3d=False, to_show=False)
     
-    coordsx = coords[0]
-    coordsy = coords[1]
-    xcorrect = 0
-    ycorrect = 0
-    g = ut.resize_image(coords, size, g)
-    g_o = ut.resize_image((coordsx+xcorrect, coordsy+ycorrect), size, g_o)
-    ut.plot_one_thing(g, "shot", colorbar=True, plot_3d=False, to_show=False)
-    ut.plot_one_thing(g_o, "ps", colorbar=True, plot_3d=False, to_show=True)
+    #coordsx = coords[0]
+    #coordsy = coords[1]
+    #xcorrect = 0
+    #ycorrect = 0
+    #g = ut.resize_image(coords, size, g)
+    #g_o = ut.resize_image((coordsx+xcorrect, coordsy+ycorrect), size, g_o)
+    #ut.plot_one_thing(g, "shot", colorbar=True, plot_3d=False, to_show=False)
+    #ut.plot_one_thing(g_o, "ps", colorbar=True, plot_3d=False, to_show=True)
 
     # Downsample
     f=downsamplef
@@ -157,6 +174,6 @@ def main(fname='05255_t1_int', fname_ps=None, typ='box', size=600, coords = (133
 
 if __name__ == '__main__':
     # # coords in (row, column).
-      e_s, e_ps = main(fname='Quantaray/8_23_2024/shot0', fname_ps="Quantaray/8_23_2024/shot0", size=(936, 1732),
-                    coords=(int(1935), int(2793)), fftycoords=(int(790), int(840)), fftxcoords=(int(300), int(625)),
-                    not_horizontal=True, typ='box', angle=0.0, downsamplef=1)
+      e_s, e_ps = unwrapSingle(shotNumer=21,shotNumber_bg="Quantaray/8_23_2024/shot0",size=(936, 1732),
+                    coords=(int(1935), int(2793)),fftycoords=(int(790),int(840)),fftxcoords=(int(300), int(625)),
+                    not_horizontal=True,typ='box',angle=0.0,downsamplef=1)

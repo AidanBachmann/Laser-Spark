@@ -874,13 +874,9 @@ def save(self, filepath):
     print('Saved model to: {}'.format(filepath))
 
 
-def preProcess(f_name=None, med_ksize=5):
-    data = Path("./Data/" + f_name).resolve()
-    n = data
-    thresh = 100
-
+def preProcess(f_name=None,med_ksize=5):
     # Load an color image.
-    shot = cv2.imread(filename=str(data))
+    shot = np.load(filename=f_name)
     # sigma_est = estimate_sigma(shot, multichannel=True, average_sigmas=True)
 
     # Apply histogram equalization [CLAHE]
