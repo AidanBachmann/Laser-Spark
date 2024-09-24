@@ -35,9 +35,11 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     return time,Ni,Nf,numSets
 
 def cropSingle(shotNum,LX=LX,LY=LY,UX=UX,UY=UY,source_path=source,targ_path=target): # Crop single image, save in target directory
-    arr = np.asarray(Image.open(f'{source_path}/{shotNum}_interferometer.jpg').convert('L')) # Open image in greyscale, store in array
-    croppedArr = arr[UY:LY+1,UX:LX+1] # Crop Image
-    plt.imshow(croppedArr)
+    arr = np.asarray(Image.open(f'{source_path}/{shotNum}_interferometer.jpg')) # Open image in greyscale, store in array
+    croppedArr = arr[UY:LY+1,UX:LX+1,:] # Crop Image
+    np.savez(f'{targ_path}/{shotNum}_interferometer',croppedArr) # Save cropped image data as a numpy array
+
+    plt.imshow(croppedArr) # Plot cropped image
     plt.savefig(f'{targ_path}/{shotNum}_interferometer.jpg')
 
 def cropSet(Ni,Nf): # Crop set of images for one time setting
@@ -49,7 +51,7 @@ def cropAll(): # Crop all data described in Shot Info text file
     _,Ni,Nf,numSets = getShotInfo() # Get shot info
     for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, crop images
         cropSet(Ni[i],Nf[i])
-    print('DONE')
+    print('DONE') 
 
 # ---------- Main ----------
 
