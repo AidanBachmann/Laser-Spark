@@ -37,12 +37,6 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     Ni,Nf = info[:,1].astype(int),info[:,2].astype(int) # Initial and final shot number for each time setting
     numSets = len(time) # Number of datasets taken
     return time,Ni,Nf,numSets
-
-def checkIntensity(g,threshold=50): # Check if image is black or if it has a signal. 'g' is green channel from image.
-    if np.sum(g)/(g.shape[0]*g.shape[1]) > threshold: # Check if green intensity exceeds threshold
-        return 1
-    else:
-        return 0
     
 def unwrap_bg(shotNumber_bg=15,typ='box',size=600,coords = (1330, 850), # Unwrap phase for the background 
          fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
@@ -129,12 +123,13 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',fftycoords=(int(790),i
     # Initially Perform Wavelet Analysis to clean #
     # Preshot #
     # Split Channels #
-    b_o, g_o, r_o = ut.preProcess(f_name=f'{source}/{f_name_ps}.npz', med_ksize=19)
+    b_o,g_o,r_o,_ = ut.preProcess(f_name=f'{source}/{f_name_ps}.npz', med_ksize=19)
 
     # Shot #
     # Split Channels #
-    (b, g, r) = ut.preProcess(f_name=f'{source}/{f_name}.npz', med_ksize=19)
-    if checkIntensity(g): # Check if image is blank
+    (b,g,r,flag) = ut.preProcess(f_name=f'{source}/{f_name}.npz', med_ksize=19)
+
+    if flag: # Check if image is blank
         pass
     else:
         print(f'Image {f_name} has no signal, skipping to next image...')
@@ -260,12 +255,4 @@ def unwrapAll(): # Unwrap all data described in Shot Info text file
     _,Ni,Nf,numSets = getShotInfo() # Get shot info
     for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, unwrap images
         unwrapSet(Ni[i],Nf[i])
-    print('DONE') 
-
-if __name__ == '__main__':
-    # # coords in (row, column).
-      start = TIME.time()
-      e_s, e_ps = unwrapSingle(shotNumber=165)
-      end = TIME.time()
-      print(f'Finished in {end - start} seconds.')
-    
+    print('DONE')

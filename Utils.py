@@ -873,6 +873,11 @@ def save(self, filepath):
     np.savez(filepath, **all_params)
     print('Saved model to: {}'.format(filepath))
 
+def checkIntensity(g,threshold=50): # Check if image is black or if it has a signal. 'g' is green channel from image.
+    if np.sum(g)/(g.shape[0]*g.shape[1]) > threshold: # Check if green intensity exceeds threshold
+        return 1
+    else:
+        return 0
 
 def preProcess(f_name=None,med_ksize=5):
     # Load an color image.
@@ -893,6 +898,7 @@ def preProcess(f_name=None,med_ksize=5):
     shot_nl = cv2.cvtColor(image_yuv, cv2.COLOR_YUV2RGB)
     # Split Channels
     (b, g, r) = (shot_nl[:, :, 0], shot_nl[:, :, 1], shot_nl[:, :, 2])
+    flag = checkIntensity(shot[:,:,1]) # Check if image is blank
     # g = cv2.medianBlur(g, med_ksize)
     # g = cv2.GaussianBlur(g, (9, 9), 0)
     # g = cv2.equalizeHist(g)
@@ -903,7 +909,7 @@ def preProcess(f_name=None,med_ksize=5):
     shot = []
     shot_nl=[]
     image_yuv=[]
-    return b, g, r
+    return b,g,r,flag
 
 def gaussian_kernel(sigma=3, to_norm=True):
     filter_size = 2 * int(4 * sigma + 0.5) + 1
