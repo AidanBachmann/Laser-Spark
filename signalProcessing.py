@@ -37,7 +37,7 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     numSets = len(time) # Number of datasets taken
     return time,Ni,Nf,numSets
 
-def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600,coords = (1330, 850),
+def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (1330, 850),
          fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
     f_name = f'{str(shotNumber).zfilL(5)}_interferometer' # Get filename of shot
     f_name_ps = f'{str(shotNumber_bg).zfilL(5)}_interferometer' # Get filename of preshot (ambient phase)
@@ -123,7 +123,7 @@ def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600
     pdiffR = ut.rotate_im(p=pdiff, angle=angle)
     ut.plot_one_thing(pdiffR, "pdiff", colorbar=True, plot_3d=False, to_show=False, vmax=(-20, 12))
 
-    np.savez('Data/'+f_name, pdiffR)
+    np.savez(f'{target}/{f_name}_{pdiff}',pdiffR)
 
     # pdiffRLP = ut.gaussian_filter(pdiffR, sigma=6)
     # ut.plot_one_thing(pdiffRLP, "pdiffRLP", colorbar=True, plot_3d=False, vmax=(-20, 12))
@@ -140,7 +140,7 @@ def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600
     im = ax1.imshow(phase_s, cmap="RdBu", vmin=0, vmax=6.5)
     plt.colorbar(im)
     plt.tight_layout()
-    plt.savefig("./Plots/8_4_2023_shot1_phase_s.png", dpi=600)
+    #plt.savefig("./Plots/8_4_2023_shot1_phase_s.png", dpi=600)
     plt.show()
 
     fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
@@ -148,7 +148,7 @@ def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600
     im = ax1.imshow(pdiff, cmap="RdBu", vmin=-20, vmax=12)
     plt.colorbar(im)
     plt.tight_layout()
-    plt.savefig("./Plots/8_4_2023_shot1_pdiff.png", dpi=600)
+    #plt.savefig("./Plots/8_4_2023_shot1_pdiff.png", dpi=600)
     plt.show()
 
     fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
@@ -156,14 +156,14 @@ def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600
     im = ax1.imshow(np.log10(np.abs(F_s)+1), cmap="RdBu")
     plt.colorbar(im)
     plt.tight_layout()
-    plt.savefig("./Plots/8_4_2023_shot1_F_s.png", dpi=600)
+    #plt.savefig("./Plots/8_4_2023_shot1_F_s.png", dpi=600)
     plt.show()
 
     fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
     fig1.set_size_inches(14, 14)
     im = ax1.imshow(np.log10(np.abs(F_ps)+1), cmap="RdBu")
     plt.colorbar(im)
-    plt.savefig("./Plots/8_4_2023_shot1_F_ps.png", dpi=600)
+    #plt.savefig("./Plots/8_4_2023_shot1_F_ps.png", dpi=600)
     plt.show()
 
     # ut.save_mat_to_im(pdiff, '8_4_2023_shot1_pdiff.tiff')
@@ -172,8 +172,19 @@ def unwrapSingle(shotNumber='05255_t1_int',shotNumber_bg=None,typ='box',size=600
     tracemalloc.stop()
     return err_s, err_ps
 
+def unwrapSet(Ni,Nf): # Unwrap set of images for one time setting
+    numShots = Nf - Ni + 1 # Determine number of shots in the set
+    for i in np.linspace(0,numShots-1,numShots,dtype='int'): # Loop through, unwrap each image
+        unwrapSingle(str(Ni + i).zfill(5)) # zfill pads the shot number with leading zeros
+
+def unwrapAll(): # Unwrap all data described in Shot Info text file
+    _,Ni,Nf,numSets = getShotInfo() # Get shot info
+    for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, unwrap images
+        unwrapSet(Ni[i],Nf[i])
+    print('DONE') 
+
 if __name__ == '__main__':
     # # coords in (row, column).
-      e_s, e_ps = unwrapSingle(shotNumer=21,shotNumber_bg="Quantaray/8_23_2024/shot0",size=(936, 1732),
+      e_s, e_ps = unwrapSingle(shotNumer=165,shotNumber_bg=15,size=(936, 1732),
                     coords=(int(1935), int(2793)),fftycoords=(int(790),int(840)),fftxcoords=(int(300), int(625)),
                     not_horizontal=True,typ='box',angle=0.0,downsamplef=1)
