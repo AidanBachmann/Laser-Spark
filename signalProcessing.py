@@ -42,6 +42,84 @@ def checkIntensity(g,threshold=50): # Check if image is black or if it has a sig
         return 1
     else:
         return 0
+    
+def unwrap_bg(shotNumber_bg=15,typ='box',size=600,coords = (1330, 850), # Unwrap phase for the background 
+         fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
+    f_name_ps = f'{str(shotNumber_bg).zfill(5)}_interferometer' # Get filename of preshot (ambient phase)
+
+    # Initially Perform Wavelet Analysis to clean #
+    # Preshot #
+    # Split Channels #
+    b_o, g_o, r_o = ut.preProcess(f_name=f'{source}/{f_name_ps}.npz', med_ksize=19)
+
+    # Downsample
+    f=downsamplef
+    fftxcoords = (int(fftxcoords[0]/f), int(fftxcoords[1]/f))
+    fftycoords = (int(fftycoords[0]/f), int(fftycoords[1]/f))
+    if f > 1:
+        r_o = ut.downsample_2d(r_o, freq=f)
+        g_o = ut.downsample_2d(g_o, freq=f)
+        b_o = ut.downsample_2d(b_o, freq=f)
+
+    g_ps=g_o
+
+    # Now For Shot, Resize and Find Mask #
+    b_o = []
+    r_o = []
+
+    if not_horizontal:
+        g_ps = np.rot90(g_ps, 1)
+    # h_n, h_bin = ut.plot_hist_image(g_ps, 30, True)
+    # ut.fit_to_dist(g_ps.flatten(), h_n, h_bin, 'gamma')
+
+    # Pad with zeros to 2^N #
+    ((F_s, F_ps), orig_size) = ut.pad_and_fft((g_ps))
+
+    # create a mask
+    # The mask is an array of 1s at the elements of the fft we want to keep.  The rest of the array is filled with zeros
+    mask = ut.generate_fft_mask(fftxcoords=fftxcoords, fftycoords=fftycoords, F_ps=F_ps, F_s=F_ps, typ=typ)
+
+    # apply mask and inverse DFT #
+    # First For Preshot then shot #
+    ## pss and ss are the images back in the real space, but after filtering in the fourier domain. ##
+    ## F_m_ps and F_m_s are the fourier domain images, but after the mask has been applied ##
+    (pss, F_m_ps) = ut.apply_mask_ifft((F_ps), mask)
+    (phase_ps) = ut.resize_list_images(ut.compute_wrapped_phase((pss)), orig_size)
+
+    # Unwrap Phase #
+    (ResPS, RmaskPS) = ut.gen_res_map((phase_ps), int(10/f))
+    ut.plot_one_thing(RmaskPS, "residualPS", colorbar=True)
+    pps, n_iters_ps, err_ps, maskedSigPS = ut.modifiedCGSolver(phase_ps, 1E-15, RmaskPS, to_plot=True)
+
+    # Resize Images to original size #
+    (F_ps, pps) = ut.resize_list_images((F_ps, pps), orig_size)
+    pps = pps + abs(pps.min())
+
+    np.savez(f'{target}/{f_name}_ps',pdiffR)
+
+    # Plot Everything and save them#
+
+    fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
+    fig1.set_size_inches(14,14)
+    im = ax1.imshow(np.log10(np.abs(F_s)+1), cmap="RdBu")
+    plt.colorbar(im)
+    plt.tight_layout()
+    #plt.savefig("./Plots/8_4_2023_shot1_F_s.png", dpi=600)
+    plt.show()
+
+    fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True)
+    fig1.set_size_inches(14, 14)
+    im = ax1.imshow(np.log10(np.abs(F_ps)+1), cmap="RdBu")
+    plt.colorbar(im)
+    #plt.savefig("./Plots/8_4_2023_shot1_F_ps.png", dpi=600)
+    plt.show()
+
+    # ut.save_mat_to_im(pdiff, '8_4_2023_shot1_pdiff.tiff')
+
+    # stopping the library
+    tracemalloc.stop()
+    return err_ps
+    
 
 def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (1330, 850),
          fftycoords=(400,500),fftxcoords=(475),not_horizontal=False,angle=0,downsamplef=1,source=source,target=target):
@@ -61,18 +139,6 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     else:
         print(f'Image {f_name} has no signal, skipping to next image...')
         return -1,-1
-
-    # Resize Images #
-    # ut.plot_one_thing(g, "original", colorbar=True, plot_3d=False, to_show=False)
-    
-    #coordsx = coords[0]
-    #coordsy = coords[1]
-    #xcorrect = 0
-    #ycorrect = 0
-    #g = ut.resize_image(coords, size, g)
-    #g_o = ut.resize_image((coordsx+xcorrect, coordsy+ycorrect), size, g_o)
-    #ut.plot_one_thing(g, "shot", colorbar=True, plot_3d=False, to_show=False)
-    #ut.plot_one_thing(g_o, "ps", colorbar=True, plot_3d=False, to_show=True)
 
     # Downsample
     f=downsamplef
@@ -134,7 +200,7 @@ def unwrapSingle(shotNumber=21,shotNumber_bg=15,typ='box',size=600,coords = (133
     pdiffR = ut.rotate_im(p=pdiff, angle=angle)
     ut.plot_one_thing(pdiffR, "pdiff", colorbar=True, plot_3d=False, to_show=False, vmax=(-20, 12))
 
-    np.savez(f'{target}/{f_name}_{pdiff}',pdiffR)
+    np.savez(f'{target}/{f_name}_pdiff',pdiffR)
 
     # pdiffRLP = ut.gaussian_filter(pdiffR, sigma=6)
     # ut.plot_one_thing(pdiffRLP, "pdiffRLP", colorbar=True, plot_3d=False, vmax=(-20, 12))
