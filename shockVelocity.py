@@ -32,8 +32,17 @@ def readSingle(shotNum,row=525,source=source): # Read unwrapped phase from a sin
     N = len(lineout) # Number of points in lineout
     pxl = np.linspace(0,N-1,N,dtype='int') # Pixel array
 
-    plt.plot(pxl,np.ones(N)*row,c='b') # Plot line indicating lineout row
-    plt.imshow(shot) # Plot unwrapped phase
+    # Make plots
+    _,ax = plt.subplots(1,2,figsize=(12,8))
+    ax[0].plot(pxl,np.ones(N)*row,c='black',label='Lineout at Row {row}') # Plot line indicating lineout row
+    ax[0].imshow(shot) # Plot unwrapped phase
+    ax[0].set_title(f'Unwrapped Phase')
+    ax[0].legend()
+    ax[1].plot(pxl,lineout)
+    ax[1].set_xlabel('Pixel Number')
+    ax[1].set_ylabel('Unwrapped Phase')
+    ax[1].set_title(f'Lineout at Row {row}')
+    ax[1].grid()
     plt.show()
 
     return lineout,pxl,N
