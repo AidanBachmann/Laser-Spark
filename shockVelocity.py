@@ -56,7 +56,7 @@ def readSingle(shotNum,row=row,source=source): # Read unwrapped phase from a sin
     # ***** End of James' Code *****
 
     # Make plots
-    _,ax = plt.subplots(1,2,figsize=(12,8))
+    '''_,ax = plt.subplots(1,2,figsize=(12,8))
     ax[0].plot(pxl,np.ones(N)*row,c='black',label='Lineout at Row {row}') # Plot line indicating lineout row
     ax[0].imshow(shot) # Plot unwrapped phase
     ax[0].set_title(f'Unwrapped Phase')
@@ -69,15 +69,54 @@ def readSingle(shotNum,row=row,source=source): # Read unwrapped phase from a sin
     ax[1].set_title(f'Lineout at Row {row}')
     ax[1].legend()
     ax[1].grid()
-    plt.show()
+    plt.show()'''
 
     return fwhm,idx,lineout,pxl,N
 
+def readSet(Ni,Nf): # Read set of unwrapped phase for one time setting, find widths
+    numShots = Nf - Ni + 1 # Determine number of shots in the set
+    widths = [] # Create empty array for widths
+    for i in np.linspace(0,numShots-1,numShots,dtype='int'): # Loop through, find widths
+        try: # Try to find array, except statement catches missing numbers (blank images)
+            width,_,_,_,_ = readSingle(Ni+i) # zfill pads the shot number with leading zeros
+            widths.append(width) # Append width to array
+        except:
+            print(f'Unwrapped phase not found for shot {str(Ni+i).zfill(5)}, image is blank. Skipping to next shot...') # Skip images not unwrapped
+    return widths
+
 def readAll(scale=scale):
-    time,Ni,Nf,numSets = getShotInfo() # Get shot info    
+    time,Ni,Nf,numSets = getShotInfo() # Get shot info
+    fwhm_pxl = np.empty([numSets],dtype='object') # Create array to save all widths in pixels
+    avg_pxl = np.zeros(numSets) # Array for average widths
+    std_pxl = np.zeros(numSets) # Array for STD of widths
+    for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, unwrap images
+        fwhm_pxl[i] = readSet(Ni[i],Nf[i]) # Save fwhm array
+        avg_pxl[i] = np.average(fwhm_pxl[i]) # Compute average width
+        std_pxl[i] = np.std(fwhm_pxl[i]) # Compute standard deviation of widths
+    print('DONE')
+
+    plt.figure(figsize=(12,8))
+    for i in np.linspace(0,numSets-1,numSets,dtype='int'):
+        plt.scatter(time[i]*np.ones(len(fwhm_pxl[i])),fwhm_pxl[i])
+        plt.scatter(time[i],avg_pxl[i],marker='+',c='r')
+        plt.errorbar(time[i],avg_pxl[i],yerr=std_pxl[i],xerr=None,ls='none',c='black',capsize=5)
+    plt.scatter(time[-1],avg_pxl[-1],marker='+',c='r',label='Average Value')
+    plt.errorbar(time[-1],avg_pxl[-1],yerr=std_pxl[-1],xerr=None,ls='none',c='black',capsize=5,label='Standard Deviation')
+    plt.xlabel('Time (ns)')
+    plt.ylabel('Spark Width (pixels)')
+    plt.title('FWHM vs Time')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    return fwhm_pxl
+
+
 
 
 #shotNum = np.asarray([131,132,133,134,135,136,137,138,139,140])
-shotNum = np.asarray([21,23,24,25,27,28])
-for i in shotNum:
-    readSingle(i)
+#shotNum = np.asarray([21,23,24,25,27,28])
+#for i in shotNum:
+#    readSingle(i)
+
+readAll()
