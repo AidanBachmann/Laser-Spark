@@ -110,3 +110,6 @@ def readAll(scale=scale):
     plt.show()
 
     return fwhm_pxl
+
+def estimateVel(widths,time): # Estimate shock velocity
+    return 0
