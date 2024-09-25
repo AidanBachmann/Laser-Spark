@@ -132,4 +132,5 @@ def estimateVel(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
     plt.grid()
     plt.show()
 
-estimateVel(*readAll())
+def computeShockV(): # Main function to compute shock speed
+    estimateVel(*readAll())

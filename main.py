@@ -18,7 +18,7 @@ elif to_do == 'unwrap':
     #SP.unwrapSingle(shotNumber=21) # 165
     SP.unwrapAll()
 elif to_do == 'findv':
-    SV.readAll()
+    SV.computeShockV()
 else:
     print('Unknown function. Options are "crop" and "unwrap".')
 end = TIME.time()
