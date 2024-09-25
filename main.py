@@ -7,7 +7,7 @@ import shockVelocity as SV
 
 # ---------- Flags ----------
 
-to_do = 'pass' # Sets function of main. Options are 'crop', 'unwrap', and 'findv'.
+to_do = 'findv' # Sets function of main. Options are 'crop', 'unwrap', and 'findv'.
 
 # ---------- Main ----------
 
@@ -18,7 +18,7 @@ elif to_do == 'unwrap':
     #SP.unwrapSingle(shotNumber=21) # 165
     SP.unwrapAll()
 elif to_do == 'findv':
-    pass
+    SV.readAll()
 else:
     print('Unknown function. Options are "crop" and "unwrap".')
 end = TIME.time()

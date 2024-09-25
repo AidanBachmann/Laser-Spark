@@ -110,13 +110,3 @@ def readAll(scale=scale):
     plt.show()
 
     return fwhm_pxl
-
-
-
-
-#shotNum = np.asarray([131,132,133,134,135,136,137,138,139,140])
-#shotNum = np.asarray([21,23,24,25,27,28])
-#for i in shotNum:
-#    readSingle(i)
-
-readAll()
