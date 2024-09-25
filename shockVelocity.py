@@ -95,7 +95,7 @@ def readAll(scale=scale):
         std_pxl[i] = np.std(fwhm_pxl[i]) # Compute standard deviation of widths
     print('DONE')
 
-    plt.figure(figsize=(12,8))
+    '''plt.figure(figsize=(12,8))
     for i in np.linspace(0,numSets-1,numSets,dtype='int'):
         plt.scatter(time[i]*np.ones(len(fwhm_pxl[i])),fwhm_pxl[i])
         plt.scatter(time[i],avg_pxl[i],marker='+',c='r')
@@ -107,9 +107,29 @@ def readAll(scale=scale):
     plt.title('FWHM vs Time')
     plt.legend()
     plt.grid()
+    plt.show()'''
+
+    return avg_pxl,std_pxl,time
+
+def estimateVel(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
+    #avg_pxl /= avg_pxl # Get distance from axis of symmetry to edge of from
+    numv = len(time) # Get number of velocity points
+    vel = np.zeros([numv-1]) # Velocity array
+    errv = np.zeros([numv-1]) # Error in velocity from error propagation
+    for i in np.linspace(1,numv-1,numv-1,dtype='int'):
+        dt = time[i] - time[i-1] # Get time step
+        vel[i-1] = scale*(avg_pxl[i] - avg_pxl[i-1])/dt # Compute v
+        errv[i-1] = (scale/dt)*np.sqrt(pow(std_pxl[i],2) + pow(std_pxl[i-1],2)) # Propogate error
+    t = time[1:] # Get assoicated time values
+
+    plt.figure(figsize=(12,8))
+    plt.scatter(t,vel,label='Average Velocity')
+    plt.errorbar(t,vel,yerr=errv,xerr=None,ls='none',c='black',capsize=5,label='Standard Deviation')
+    plt.xlabel('Time (ns)')
+    plt.ylabel('Shock Velocity (pixels/ns)')
+    plt.title('Velocity vs Time')
+    plt.legend()
+    plt.grid()
     plt.show()
 
-    return fwhm_pxl
-
-def estimateVel(widths,time): # Estimate shock velocity
-    return 0
+estimateVel(*readAll())
