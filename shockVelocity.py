@@ -26,7 +26,7 @@ def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text
     numSets = len(time) # Number of datasets taken
     return time,Ni,Nf,numSets
 
-def readSingle(shotNum,row=row,source=source): # Read unwrapped phase from a single shot, take lineout, find width in pixels
+def readSingle(shotNum,row=row,source=source,target=target): # Read unwrapped phase from a single shot, take lineout, find width in pixels
     _shot_ = np.load(f'{source}/{str(shotNum).zfill(5)}_interferometer_pdiff.npz') # Open unwrapped phase
     shot = _shot_['arr_0'] # Retrieve data as a numpy array
     _shot_.close() # Close NpzFile object (prevents memory leak)
@@ -45,24 +45,28 @@ def readSingle(shotNum,row=row,source=source): # Read unwrapped phase from a sin
     half_max = max_val/2
 
     # Find the indices of the points closest to the half max
-    half_max_idx_top = np.argmin(np.abs(lineout[:max_idx]-half_max))
-    half_max_idx_bottom = np.argmin(np.abs(lineout[max_idx:]-half_max)) + max_idx
+    half_max_idx_left = np.argmin(np.abs(lineout[:max_idx]-half_max))
+    half_max_idx_right = np.argmin(np.abs(lineout[max_idx:]-half_max)) + max_idx
 
-    idx = np.asarray([half_max_idx_bottom,half_max_idx_top]) # Array of FWHM indices
+    file = open(f'{target}/widths.txt','a')  # Open widths file in append mode
+    file.write(f'{str(shotNum).zfill(5)},{pxl[half_max_idx_left]},{pxl[half_max_idx_right]}') # Write left and write pixels of FWHM
+    file.close()
 
-    fwhm = np.abs(pxl[half_max_idx_top] - pxl[max_idx])+np.abs(pxl[max_idx]-pxl[half_max_idx_bottom]) # FWHM in pixels
-    #width = half_max_idx_top + (half_max_idx_bottom+max_idx) # Not sure what this is...
+    idx = np.asarray([half_max_idx_left,half_max_idx_right]) # Array of FWHM indices
+
+    fwhm = np.abs(pxl[half_max_idx_left] - pxl[max_idx])+np.abs(pxl[max_idx]-pxl[half_max_idx_right]) # FWHM in pixels
 
     # ***** End of James' Code *****
 
     # Make plots
     '''_,ax = plt.subplots(1,2,figsize=(12,8))
-    ax[0].plot(pxl,np.ones(N)*row,c='black',label='Lineout at Row {row}') # Plot line indicating lineout row
+    ax[0].plot(pxl,np.ones(N)*row,c='black',label=f'Lineout at Row {row}') # Plot line indicating lineout row
     ax[0].imshow(shot) # Plot unwrapped phase
     ax[0].set_title(f'Unwrapped Phase')
     ax[0].legend()
     ax[1].plot(pxl,lineout,label='Lineout')
-    ax[1].scatter(pxl[idx],lineout[idx],marker='+',c='r',label=f'FWHM = {fwhm} pixels')
+    ax[1].scatter(pxl[idx[0]],lineout[idx[0]],marker='+',c='r',label=f'Left')
+    ax[1].scatter(pxl[idx[1]],lineout[idx[1]],marker='+',c='g',label=f'Right')
     ax[1].scatter(pxl[max_idx],max_val,marker='*',c='r',label='Max Value')
     ax[1].set_xlabel('Pixel Number')
     ax[1].set_ylabel('Unwrapped Phase')
@@ -90,29 +94,28 @@ def readAll(scale=scale):
     avg_pxl = np.zeros(numSets) # Array for average widths
     std_pxl = np.zeros(numSets) # Array for STD of widths
     for i in np.linspace(0,numSets-1,numSets,dtype='int'): # loop through sets, unwrap images
-        fwhm_pxl[i] = readSet(Ni[i],Nf[i]) # Save fwhm array
-        avg_pxl[i] = np.average(fwhm_pxl[i]) # Compute average width
-        std_pxl[i] = np.std(fwhm_pxl[i]) # Compute standard deviation of widths
+        fwhm_pxl[i] = readSet(Ni[i],Nf[i]) # Save radius array
+        avg_pxl[i] = np.average(fwhm_pxl[i])/2 # Compute average radius
+        std_pxl[i] = np.std(fwhm_pxl[i])/2 # Compute standard deviation of radii
     print('DONE')
 
-    '''plt.figure(figsize=(12,8))
+    plt.figure(figsize=(12,8))
     for i in np.linspace(0,numSets-1,numSets,dtype='int'):
-        plt.scatter(time[i]*np.ones(len(fwhm_pxl[i])),fwhm_pxl[i])
+        plt.scatter(time[i]*np.ones(len(fwhm_pxl[i])),np.asarray(fwhm_pxl[i])/2)
         plt.scatter(time[i],avg_pxl[i],marker='+',c='r')
         plt.errorbar(time[i],avg_pxl[i],yerr=std_pxl[i],xerr=None,ls='none',c='black',capsize=5)
     plt.scatter(time[-1],avg_pxl[-1],marker='+',c='r',label='Average Value')
     plt.errorbar(time[-1],avg_pxl[-1],yerr=std_pxl[-1],xerr=None,ls='none',c='black',capsize=5,label='Standard Deviation')
     plt.xlabel('Time (ns)')
-    plt.ylabel('Spark Width (pixels)')
-    plt.title('FWHM vs Time')
+    plt.ylabel('Spark Radius (pixels)')
+    plt.title('Radius vs Time')
     plt.legend()
     plt.grid()
-    plt.show()'''
+    plt.show()
 
     return avg_pxl,std_pxl,time
 
 def estimateVel(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
-    #avg_pxl /= avg_pxl # Get distance from axis of symmetry to edge of from
     numv = len(time) # Get number of velocity points
     vel = np.zeros([numv-1]) # Velocity array
     errv = np.zeros([numv-1]) # Error in velocity from error propagation
