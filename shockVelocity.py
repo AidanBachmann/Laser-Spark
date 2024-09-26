@@ -5,6 +5,7 @@
 
 import numpy as np
 import pandas as pd
+import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 # ---------- File Paths and Constants ----------
@@ -49,7 +50,7 @@ def readSingle(shotNum,row=row,source=source,target=target): # Read unwrapped ph
     half_max_idx_right = np.argmin(np.abs(lineout[max_idx:]-half_max)) + max_idx
 
     file = open(f'{target}/widths.txt','a')  # Open widths file in append mode
-    file.write(f'{str(shotNum).zfill(5)},{pxl[half_max_idx_left]},{pxl[half_max_idx_right]}') # Write left and write pixels of FWHM
+    file.write(f'{str(shotNum).zfill(5)},{pxl[half_max_idx_left]},{pxl[half_max_idx_right]}\n') # Write left and write pixels of FWHM
     file.close()
 
     idx = np.asarray([half_max_idx_left,half_max_idx_right]) # Array of FWHM indices
@@ -115,7 +116,7 @@ def readAll(scale=scale):
 
     return avg_pxl,std_pxl,time
 
-def estimateVel(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
+def estimateVel_fd(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity with finite difference
     numv = len(time) # Get number of velocity points
     vel = np.zeros([numv-1]) # Velocity array
     errv = np.zeros([numv-1]) # Error in velocity from error propagation
@@ -135,5 +136,37 @@ def estimateVel(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
     plt.grid()
     plt.show()
 
+def r(t,A,p,C): # Power law to fit to rn,tn data
+    return A*pow(t,p) + C
+
+def rdot(t,A,p): # Time derivative of r(t)
+    return A*p*pow(t,p-1)
+
+def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity by fitting r(t) and computing derivative
+    popt,pcov = opt.curve_fit(r,time,avg_pxl,p0=[1,1,1],sigma=std_pxl) # Fit r(t,A,p,C) to data
+    rfit = r(time,*popt) # Evaluate fit
+    vfit = rdot(time,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+    
+    _,ax = plt.subplots(1,2,figsize=(12,8))
+    
+    ax[0].scatter(time,avg_pxl,label='Raw Data')
+    ax[0].errorbar(time,avg_pxl,xerr=None,yerr=std_pxl,ls='none',capsize=5,label='Error')
+    ax[0].plot(time,rfit,label=r'$r(t) = At^{p} + C$')
+    ax[0].set_xlabel('Time (ns)')
+    ax[0].set_ylabel('Spark Radius (pixels)')
+    ax[0].set_title('Spark Radius Power Law Fit')
+    ax[0].legend()
+    ax[0].grid()
+
+    ax[1].plot(time,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$')
+    ax[1].set_xlabel('Time (ns)')
+    ax[1].set_ylabel('Spark Radius Velocity (pixels/ns)')
+    ax[1].set_title(r'$\dot{r}(t)$ Computed from Power Law Fit')
+    ax[1].legend()
+    ax[1].grid()
+
+    plt.show()
+
 def computeShockV(): # Main function to compute shock speed
-    estimateVel(*readAll())
+    #estimateVel_fd(*readAll())
+    estimateVel_fit(*readAll())
