@@ -146,12 +146,14 @@ def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
     popt,pcov = opt.curve_fit(r,time,avg_pxl,p0=[1,1,1],sigma=std_pxl) # Fit r(t,A,p,C) to data
     rfit = r(time,*popt) # Evaluate fit
     vfit = rdot(time,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+
+    print(pcov)
     
     _,ax = plt.subplots(1,2,figsize=(12,8))
     
-    ax[0].scatter(time,avg_pxl,label='Raw Data')
-    ax[0].errorbar(time,avg_pxl,xerr=None,yerr=std_pxl,ls='none',capsize=5,label='Error')
-    ax[0].plot(time,rfit,label=r'$r(t) = At^{p} + C$')
+    ax[0].scatter(time,avg_pxl,label='Raw Data',c='r')
+    ax[0].errorbar(time,avg_pxl,xerr=None,yerr=std_pxl,ls='none',capsize=5,label='Error',c='blue')
+    ax[0].plot(time,rfit,label=r'$r(t) = At^{p} + C$',c='g')
     ax[0].set_xlabel('Time (ns)')
     ax[0].set_ylabel('Spark Radius (pixels)')
     ax[0].set_title('Spark Radius Power Law Fit')
