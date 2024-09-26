@@ -49,9 +49,9 @@ def readSingle(shotNum,row=row,source=source,target=target): # Read unwrapped ph
     half_max_idx_left = np.argmin(np.abs(lineout[:max_idx]-half_max))
     half_max_idx_right = np.argmin(np.abs(lineout[max_idx:]-half_max)) + max_idx
 
-    file = open(f'{target}/widths.txt','a')  # Open widths file in append mode
-    file.write(f'{str(shotNum).zfill(5)},{pxl[half_max_idx_left]},{pxl[half_max_idx_right]}\n') # Write left and write pixels of FWHM
-    file.close()
+    #file = open(f'{target}/widths.txt','a')  # Open widths file in append mode
+    #file.write(f'{str(shotNum).zfill(5)},{pxl[half_max_idx_left]},{pxl[half_max_idx_right]}\n') # Write left and write pixels of FWHM
+    #file.close()
 
     idx = np.asarray([half_max_idx_left,half_max_idx_right]) # Array of FWHM indices
 
@@ -100,7 +100,7 @@ def readAll(scale=scale):
         std_pxl[i] = np.std(fwhm_pxl[i])/2 # Compute standard deviation of radii
     print('DONE')
 
-    plt.figure(figsize=(12,8))
+    '''plt.figure(figsize=(12,8))
     for i in np.linspace(0,numSets-1,numSets,dtype='int'):
         plt.scatter(time[i]*np.ones(len(fwhm_pxl[i])),np.asarray(fwhm_pxl[i])/2)
         plt.scatter(time[i],avg_pxl[i],marker='+',c='r')
@@ -112,7 +112,7 @@ def readAll(scale=scale):
     plt.title('Radius vs Time')
     plt.legend()
     plt.grid()
-    plt.show()
+    plt.show()'''
 
     return avg_pxl,std_pxl,time
 
