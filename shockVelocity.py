@@ -144,8 +144,9 @@ def rdot(t,A,p): # Time derivative of r(t)
 
 def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity by fitting r(t) and computing derivative
     popt,pcov = opt.curve_fit(r,time,avg_pxl,p0=[1,1,1],sigma=std_pxl) # Fit r(t,A,p,C) to data
-    rfit = r(time,*popt) # Evaluate fit
-    vfit = rdot(time,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+    t_upsample = np.linspace(time[0],time[-1],1000) # Upsample time for fits
+    rfit = r(t_upsample,*popt) # Evaluate fit
+    vfit = rdot(t_upsample,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
 
     print(pcov)
     
@@ -153,14 +154,14 @@ def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
     
     ax[0].scatter(time,avg_pxl,label='Raw Data',c='r')
     ax[0].errorbar(time,avg_pxl,xerr=None,yerr=std_pxl,ls='none',capsize=5,label='Error',c='blue')
-    ax[0].plot(time,rfit,label=r'$r(t) = At^{p} + C$',c='g')
+    ax[0].plot(t_upsample,rfit,label=r'$r(t) = At^{p} + C$',c='g')
     ax[0].set_xlabel('Time (ns)')
     ax[0].set_ylabel('Spark Radius (pixels)')
     ax[0].set_title('Spark Radius Power Law Fit')
     ax[0].legend()
     ax[0].grid()
 
-    ax[1].plot(time,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$')
+    ax[1].plot(t_upsample,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$')
     ax[1].set_xlabel('Time (ns)')
     ax[1].set_ylabel('Spark Radius Velocity (pixels/ns)')
     ax[1].set_title(r'$\dot{r}(t)$ Computed from Power Law Fit')
