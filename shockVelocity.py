@@ -148,8 +148,8 @@ def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity
     rfit = r(t_upsample,*popt) # Evaluate fit
     vfit = rdot(t_upsample,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
 
-    print(pcov)
-    
+    print(f'Fit Result: r(t) = At^p + C = {popt[0]}*t^{popt[1]} + {popt[2]}.')
+
     _,ax = plt.subplots(1,2,figsize=(12,8))
     
     ax[0].scatter(time,avg_pxl,label='Raw Data',c='r')
