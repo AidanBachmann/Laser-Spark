@@ -146,16 +146,24 @@ def r(t,A,p,C): # Power law to fit to rn,tn data
 def rdot(t,A,p): # Time derivative of r(t)
     return A*p*pow(t,p-1)
 
+def dvdA(t,p): # Derivative of rdot w.r.t. A
+    return p*pow(t,p-1)
+
+def dvdp(t,A,p): # Derivative of rdot w.r.t. A
+    return A*( pow(t,p-1) + p*(p-1)*pow(t,p-2) )
+
 def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) and computing derivative
     popt,pcov = opt.curve_fit(r,time,ravg,p0=[1,1,1],sigma=std) # Fit r(t,A,p,C) to data
     t_upsample = np.linspace(time[0],time[-1],1000) # Upsample time for r fit
     t_upsample_v = np.linspace(time[1],time[-1],1000) # Upsample time for velocity fit. Start at t = 5ns to avoid 1/t singularity at = 0.
     rfit = r(t_upsample,*popt) # Evaluate fit
     vfit = rdot(t_upsample_v,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+    errv = np.sqrt( pow(dvdA(t_upsample_v,popt[1])*pcov[0,0],2) + pow(dvdp(t_upsample_v,popt[0],popt[1])*pcov[1,1],2) ) # Propogate error for velocity fit
 
     # *** Unit Conversion ***
 
     vfit *= 1e3 # Get velocity in km/s
+    errv *= 1e3
 
     print(f'Fit Result: r(t) = At^p + C = {popt[0]}*t^{popt[1]} + {popt[2]}.')
 
@@ -171,6 +179,8 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
     ax[0].grid()
 
     ax[1].plot(t_upsample_v*1e-9,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
+    #ax[1].errorbar(t_upsample_v*1e-9,vfit,yerr=errv,xerr=None,ls='none',c='black',label='Error') # Plot error bars
+    ax[1].fill_between(t_upsample_v*1e-9,vfit-errv,vfit+errv,alpha=0.25,color='g',label='Error') # Visualize error with shade between
     ax[1].scatter(time[1:]*1e-9,rdot(time[1:],popt[0],popt[1])*1e3,c='r',label='Data')
     ax[1].set_xlabel('Time (s)')
     ax[1].set_ylabel('Shock Velocity (km/s)')
