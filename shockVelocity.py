@@ -165,7 +165,7 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
     vfit *= 1e3 # Get velocity in km/s
     errv *= 1e3
 
-    print(f'Fit Result: r(t) = At^p + C = {popt[0]}*t^{popt[1]} + {popt[2]}.')
+    print(f'\nFit Result: r(t) = At^p + C = {popt[0]}*t^{popt[1]} + {popt[2]}.')
 
     _,ax = plt.subplots(1,2,figsize=(12,8))
     
