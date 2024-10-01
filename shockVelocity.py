@@ -15,7 +15,8 @@ target = '../Shock' # Target directory to deposit cropped images
 shot_info = target + '/Shot Info.txt' # Text file containing timing and assoicated shot numbers
 
 row = 575 # Index of lineout row
-scale = 1 # mm per pixel scale (1 is placeholder value)
+scale = 0.034 # mm per pixel scale
+scale_err = 0.0007 # Uncertainty in scale in mm per pixel
 
 # ---------- Functions ----------
 
@@ -89,7 +90,7 @@ def readSet(Ni,Nf): # Read set of unwrapped phase for one time setting, find wid
             print(f'Unwrapped phase not found for shot {str(Ni+i).zfill(5)}, image is blank. Skipping to next shot...') # Skip images not unwrapped
     return widths
 
-def readAll(scale=scale):
+def readAll(scale=scale,scale_err=scale_err):
     time,Ni,Nf,numSets = getShotInfo() # Get shot info
     fwhm_pxl = np.empty([numSets],dtype='object') # Create array to save all widths in pixels
     avg_pxl = np.zeros(numSets) # Array for average widths
@@ -99,6 +100,9 @@ def readAll(scale=scale):
         avg_pxl[i] = np.average(fwhm_pxl[i])/2 # Compute average radius
         std_pxl[i] = np.std(fwhm_pxl[i])/2 # Compute standard deviation of radii
     print('DONE')
+
+    ravg = scale*avg_pxl # Get average radius in mm
+    std = np.sqrt( pow(avg_pxl*scale_err,2) + pow(scale*std_pxl,2) ) # Propogate error
 
     '''plt.figure(figsize=(12,8))
     for i in np.linspace(0,numSets-1,numSets,dtype='int'):
@@ -114,16 +118,16 @@ def readAll(scale=scale):
     plt.grid()
     plt.show()'''
 
-    return avg_pxl,std_pxl,time
+    return ravg,std,time
 
-def estimateVel_fd(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity with finite difference
+def estimateVel_fd(ravg,std,time): # Estimate shock velocity with finite difference
     numv = len(time) # Get number of velocity points
     vel = np.zeros([numv-1]) # Velocity array
     errv = np.zeros([numv-1]) # Error in velocity from error propagation
     for i in np.linspace(1,numv-1,numv-1,dtype='int'):
         dt = time[i] - time[i-1] # Get time step
-        vel[i-1] = scale*(avg_pxl[i] - avg_pxl[i-1])/dt # Compute v
-        errv[i-1] = (scale/dt)*np.sqrt(pow(std_pxl[i],2) + pow(std_pxl[i-1],2)) # Propogate error
+        vel[i-1] = (ravg[i] - ravg[i-1])/dt # Compute v
+        errv[i-1] = (1/dt)*np.sqrt(pow(std[i],2) + pow(std[i-1],2)) # Propogate error
     t = time[1:] # Get assoicated time values
 
     plt.figure(figsize=(12,8))
@@ -142,32 +146,38 @@ def r(t,A,p,C): # Power law to fit to rn,tn data
 def rdot(t,A,p): # Time derivative of r(t)
     return A*p*pow(t,p-1)
 
-def estimateVel_fit(avg_pxl,std_pxl,time,scale=scale): # Estimate shock velocity by fitting r(t) and computing derivative
-    popt,pcov = opt.curve_fit(r,time,avg_pxl,p0=[1,1,1],sigma=std_pxl) # Fit r(t,A,p,C) to data
-    t_upsample = np.linspace(time[0],time[-1],1000) # Upsample time for fits
+def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) and computing derivative
+    popt,pcov = opt.curve_fit(r,time,ravg,p0=[1,1,1],sigma=std) # Fit r(t,A,p,C) to data
+    t_upsample = np.linspace(time[0],time[-1],1000)[1:] # Upsample time for fits
     rfit = r(t_upsample,*popt) # Evaluate fit
     vfit = rdot(t_upsample,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+
+    # *** Unit Conversion ***
+
+    vfit *= 1e3 # Get velocity in km/s
 
     print(f'Fit Result: r(t) = At^p + C = {popt[0]}*t^{popt[1]} + {popt[2]}.')
 
     _,ax = plt.subplots(1,2,figsize=(12,8))
     
-    ax[0].scatter(time,avg_pxl,label='Raw Data',c='r')
-    ax[0].errorbar(time,avg_pxl,xerr=None,yerr=std_pxl,ls='none',capsize=5,label='Error',c='blue')
+    ax[0].scatter(time,ravg,label='Raw Data',c='r')
+    ax[0].errorbar(time,ravg,xerr=None,yerr=std,ls='none',capsize=5,label='Error',c='blue')
     ax[0].plot(t_upsample,rfit,label=r'$r(t) = At^{p} + C$',c='g')
     ax[0].set_xlabel('Time (ns)')
-    ax[0].set_ylabel('Spark Radius (pixels)')
+    ax[0].set_ylabel('Spark Radius (mm)')
     ax[0].set_title('Spark Radius Power Law Fit')
     ax[0].legend()
     ax[0].grid()
 
-    ax[1].plot(t_upsample,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$')
-    ax[1].set_xlabel('Time (ns)')
-    ax[1].set_ylabel('Spark Radius Velocity (pixels/ns)')
+    ax[1].plot(t_upsample*1e-9,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
+    ax[1].scatter(time[1:]*1e-9,rdot(time[1:],popt[0],popt[1])*1e3,c='r',label='Data')
+    ax[1].set_xlabel('Time (s)')
+    ax[1].set_ylabel('Shock Velocity (km/s)')
     ax[1].set_title(r'$\dot{r}(t)$ Computed from Power Law Fit')
     ax[1].legend()
     ax[1].grid()
 
+    plt.subplots_adjust(wspace=0.3)
     plt.show()
 
 def computeShockV(): # Main function to compute shock speed
