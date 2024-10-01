@@ -148,9 +148,10 @@ def rdot(t,A,p): # Time derivative of r(t)
 
 def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) and computing derivative
     popt,pcov = opt.curve_fit(r,time,ravg,p0=[1,1,1],sigma=std) # Fit r(t,A,p,C) to data
-    t_upsample = np.linspace(time[0],time[-1],1000)[1:] # Upsample time for fits
+    t_upsample = np.linspace(time[0],time[-1],1000) # Upsample time for r fit
+    t_upsample_v = np.linspace(time[1],time[-1],1000) # Upsample time for velocity fit. Start at t = 5ns to avoid 1/t singularity at = 0.
     rfit = r(t_upsample,*popt) # Evaluate fit
-    vfit = rdot(t_upsample,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
+    vfit = rdot(t_upsample_v,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
 
     # *** Unit Conversion ***
 
@@ -169,7 +170,7 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
     ax[0].legend()
     ax[0].grid()
 
-    ax[1].plot(t_upsample*1e-9,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
+    ax[1].plot(t_upsample_v*1e-9,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
     ax[1].scatter(time[1:]*1e-9,rdot(time[1:],popt[0],popt[1])*1e3,c='r',label='Data')
     ax[1].set_xlabel('Time (s)')
     ax[1].set_ylabel('Shock Velocity (km/s)')
