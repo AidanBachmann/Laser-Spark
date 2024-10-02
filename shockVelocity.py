@@ -158,7 +158,7 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
     t_upsample_v = np.linspace(time[1],time[-1],1000) # Upsample time for velocity fit. Start at t = 5ns to avoid 1/t singularity at = 0.
     rfit = r(t_upsample,*popt) # Evaluate fit
     vfit = rdot(t_upsample_v,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
-    errv = np.sqrt( pow(dvdA(t_upsample_v,popt[1])*pcov[0,0],2) + pow(dvdp(t_upsample_v,popt[0],popt[1])*pcov[1,1],2) ) # Propogate error for velocity fit
+    errv = np.sqrt( pow(dvdA(t_upsample_v,popt[1]),2)*pcov[0,0] + pow(dvdp(t_upsample_v,popt[0],popt[1]),2)*pcov[1,1] ) # Propogate error for velocity fit
 
     # *** Unit Conversion ***
 
