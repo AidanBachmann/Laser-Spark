@@ -178,11 +178,11 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
     ax[0].legend()
     ax[0].grid()
 
-    ax[1].plot(t_upsample_v*1e-9,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
+    ax[1].plot(t_upsample_v,vfit,label=r'$\dot{r}(t) = Apt^{p-1}$') # Time in seconds
     #ax[1].errorbar(t_upsample_v*1e-9,vfit,yerr=errv,xerr=None,ls='none',c='black',label='Error') # Plot error bars
-    ax[1].fill_between(t_upsample_v*1e-9,vfit-errv,vfit+errv,alpha=0.25,color='g',label='Error') # Visualize error with shade between
-    ax[1].scatter(time[1:]*1e-9,rdot(time[1:],popt[0],popt[1])*1e3,c='r',label='Data')
-    ax[1].set_xlabel('Time (s)')
+    ax[1].fill_between(t_upsample_v,vfit-errv,vfit+errv,alpha=0.25,color='g',label='Error') # Visualize error with shade between
+    ax[1].scatter(time[1:],rdot(time[1:],popt[0],popt[1])*1e3,c='r',label='Data')
+    ax[1].set_xlabel('Time (ns)')
     ax[1].set_ylabel('Shock Velocity (km/s)')
     ax[1].set_title(r'$\dot{r}(t)$ Computed from Power Law Fit')
     ax[1].legend()
