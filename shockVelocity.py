@@ -18,7 +18,7 @@ row = 575 # Index of lineout row
 scale = 0.0085 # mm per pixel scale
 scale_err = 0.0002 # Uncertainty in scale in mm per pixel
 
-ms = 1 # Average mass of relevant particles in kg
+ms = 9.109e-31 # Average mass of relevant particles in kg
 N = 1e25 # Number density (#/m^3)
 rho = ms*N # Mass density (kh/m^3)
 L = 1e-2 # Average spark length in meters
@@ -158,13 +158,36 @@ def dvdA(t,p): # Derivative of rdot w.r.t. A
 def dvdp(t,A,p): # Derivative of rdot w.r.t. A
     return A*( pow(t,p-1) + p*(p-1)*pow(t,p-2) )
 
-def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) and computing derivative
+def estimateT(v,r,t,errv,errR,tn,rho=rho,L=L): # Estimate kinetic energy
+    idx = np.where((t*1e9).astype(int) == int(tn)) # Find index of time step of interest (Abel inverted shot)
+
+    R = r[idx] # Get radius
+    V = v[idx] # Get velocity
+    ERR_R = errR[idx] # Get radius error
+    ERR_V = errv[idx] # Get velocity error
+    
+    T = np.pi*rho*R*L*pow(V,2) # Estimate kinetic energy
+    ERR_T = np.sqrt( pow(2*np.pi*rho*R*L*V*ERR_V,2) + pow(np.pi*rho*L*pow(V,2)*ERR_R,2) ) # Compute error
+
+    return T,ERR_T
+
+def estimateVel_fit(ravg,std,time,abel_tn=abel_tn): # Estimate shock velocity by fitting r(t) and computing derivative
     popt,pcov = opt.curve_fit(r,time,ravg,p0=[1,1,1],sigma=std) # Fit r(t,A,p,C) to data
     t_upsample = np.linspace(time[0],time[-1],1000) # Upsample time for r fit
     t_upsample_v = np.linspace(time[1],time[-1],1000) # Upsample time for velocity fit. Start at t = 5ns to avoid 1/t singularity at = 0.
     rfit = r(t_upsample,*popt) # Evaluate fit
     vfit = rdot(t_upsample_v,popt[0],popt[1]) # Estimate velocity from time derivative of r(t)
     errv = np.sqrt( pow(dvdA(t_upsample_v,popt[1]),2)*pcov[0,0] + pow(dvdp(t_upsample_v,popt[0],popt[1]),2)*pcov[1,1] ) # Propogate error for velocity fit
+
+    T_abel = np.zeros([len(abel_tn)]) # Array to store energy estimates
+    T_err = np.zeros([len(abel_tn)]) # Array to store energy errors
+
+    for i in np.linspace(0,len(abel_tn)-1,len(abel_tn),dtype='int'):
+        T_abel[i],T_err[i] = estimateT(rdot(time[1:],popt[0],popt[1])*1e6,ravg[1:]*1e-3,time[1:]*1e-9,
+                    np.sqrt( pow(dvdA(time[1:],popt[1]),2)*pcov[0,0] + pow(dvdp(time[1:],popt[0],popt[1]),2)*pcov[1,1] )*1e6,std[1:]*1e-3,abel_tn[i])
+
+    print(T_abel,'\n',T_err)
+    input('WAIT')
 
     # *** Unit Conversion ***
 
@@ -196,19 +219,6 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
 
     plt.subplots_adjust(wspace=0.3)
     plt.show()
-
-def estimateT(v,r,t,errv,errR,tn,rho=rho,L=L): # Estimate velocity
-    idx = np.where(int(t) == int(tn)) # Find index of time step of interest (Abel inverted shot)
-
-    R = r[idx] # Get radius
-    V = v[idx-1] # Get velocity
-    ERR_R = errR[idx] # Get radius error
-    ERR_V = errv[idx-1] # Get velocity error
-    
-    T = np.pi*rho*R*L*pow(V,2) # Estimate kinetic energy
-    ERR_T = np.sqrt( pow(2*np.pi*rho*R*L*V*ERR_V,2) + pow(np.pi*rho*L*pow(V,2)*ERR_R,2) ) # Compute error
-
-    return T,ERR_T
 
 def computeShockV(): # Main function to compute shock speed
     #estimateVel_fd(*readAll())
