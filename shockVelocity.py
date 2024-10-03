@@ -15,8 +15,8 @@ target = '../Shock' # Target directory to deposit cropped images
 shot_info = target + '/Shot Info.txt' # Text file containing timing and assoicated shot numbers
 
 row = 575 # Index of lineout row
-scale = 0.034 # mm per pixel scale
-scale_err = 0.0007 # Uncertainty in scale in mm per pixel
+scale = 0.0085 # mm per pixel scale
+scale_err = 0.0002 # Uncertainty in scale in mm per pixel
 
 # ---------- Functions ----------
 
