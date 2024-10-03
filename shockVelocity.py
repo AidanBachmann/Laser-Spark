@@ -18,6 +18,12 @@ row = 575 # Index of lineout row
 scale = 0.0085 # mm per pixel scale
 scale_err = 0.0002 # Uncertainty in scale in mm per pixel
 
+ms = 1 # Average mass of relevant particles in kg
+N = 1e25 # Number density (#/m^3)
+rho = ms*N # Mass density (kh/m^3)
+L = 1e-2 # Average spark length in meters
+abel_tn = np.asarray([45,70,90,125],dtype='int') # Time steps that were Abel inverted
+
 # ---------- Functions ----------
 
 def getShotInfo(info_path=shot_info): # Get shot information from Shot Info text file
@@ -190,6 +196,19 @@ def estimateVel_fit(ravg,std,time): # Estimate shock velocity by fitting r(t) an
 
     plt.subplots_adjust(wspace=0.3)
     plt.show()
+
+def estimateT(v,r,t,errv,errR,tn,rho=rho,L=L): # Estimate velocity
+    idx = np.where(int(t) == int(tn)) # Find index of time step of interest (Abel inverted shot)
+
+    R = r[idx] # Get radius
+    V = v[idx-1] # Get velocity
+    ERR_R = errR[idx] # Get radius error
+    ERR_V = errv[idx-1] # Get velocity error
+    
+    T = np.pi*rho*R*L*pow(V,2) # Estimate kinetic energy
+    ERR_T = np.sqrt( pow(2*np.pi*rho*R*L*V*ERR_V,2) + pow(np.pi*rho*L*pow(V,2)*ERR_R,2) ) # Compute error
+
+    return T,ERR_T
 
 def computeShockV(): # Main function to compute shock speed
     #estimateVel_fd(*readAll())
