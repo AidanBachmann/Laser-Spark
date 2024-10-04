@@ -186,8 +186,7 @@ def estimateVel_fit(ravg,std,time,abel_tn=abel_tn): # Estimate shock velocity by
         T_abel[i],T_err[i] = estimateT(rdot(time[1:],popt[0],popt[1])*1e6,ravg[1:]*1e-3,time[1:]*1e-9,
                     np.sqrt( pow(dvdA(time[1:],popt[1]),2)*pcov[0,0] + pow(dvdp(time[1:],popt[0],popt[1]),2)*pcov[1,1] )*1e6,std[1:]*1e-3,abel_tn[i])
 
-    print(T_abel,'\n',T_err)
-    input('WAIT')
+    print(f'Kinetic Energy Estimates: {T_abel}\nErrors: {T_err}')
 
     # *** Unit Conversion ***
 
